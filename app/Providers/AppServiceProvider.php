@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Inertia\ExceptionResponse;
+use Inertia\Inertia;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -46,5 +48,15 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null,
         );
+
+        Inertia::handleExceptionsUsing(function (ExceptionResponse $response) {
+            if (app()->isProduction() && in_array($response->statusCode(), [401, 402, 403, 404, 419, 429, 500, 503])) {
+                return $response->render('Error', [
+                    'code' => $response->statusCode(),
+                ])->withSharedData();
+            }
+
+            return $response;
+        });
     }
 }
